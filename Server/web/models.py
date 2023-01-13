@@ -9,3 +9,5 @@ class Notes(models.Model):
     title = models.CharField(max_length=255)
     text = models.CharField(max_length=255)
     date = models.DateTimeField("Update")
+    def __str__(self):
+        return "{}  {}  [{}]".format(self.user, self.title, self.date)
