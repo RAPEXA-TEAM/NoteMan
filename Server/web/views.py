@@ -28,7 +28,39 @@ def forget(request):
 @csrf_exempt
 def login(request):
     "login a user"
-    pass
+    # check if POST objects has username and password
+    if request.method == 'POST':
+
+        encoded = request.body
+        json = loads(encoded.decode('utf-8'))
+
+        username = json['username']
+        password = json['password']
+
+        print(username, password)
+        this_user = get_object_or_404(User, username=username)
+
+        if (check_password(password, this_user.password)):  # authentication
+
+            this_token = get_object_or_404(Token, user=this_user)
+            token = this_token.token
+            
+            context = {}
+            context['code'] = 200
+            context['token'] = token
+            return JsonResponse(context, encoder=JSONEncoder)
+
+        else:
+            
+            context = {}
+            context['code'] = 404
+            context['data'] = 'error password incorrect'
+            return JsonResponse(context, encoder=JSONEncoder)
+        
+    context = {}
+    context['code'] = 401
+    context['data'] = "request not valid!"
+    return JsonResponse(context, encoder=JSONEncoder)
 
 @csrf_exempt
 @require_POST
