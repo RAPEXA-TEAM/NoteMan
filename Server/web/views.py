@@ -16,19 +16,94 @@ def register(request):
     pass
 
 @csrf_exempt
-def edit_note(request):
-    "user edit a note"
-    pass
-
-@csrf_exempt
 def forget(request):
     "user forget password"
     pass
 
 @csrf_exempt
+def edit_note_text(request):
+    "user edit a note"
+
+    if request.method == 'POST':
+
+        encoded = request.body
+        json = loads(encoded.decode('utf-8'))
+        
+        this_token = json['token']
+        this_title = json['title']
+        this_text = json['text']
+
+        try:
+            this_user = get_object_or_404(User, token__token=this_token)
+            
+            Note = Notes.objects.get(title=this_title,user=this_user)
+            Note.text = this_text
+            Note.save()
+            
+            return JsonResponse({
+                'data': "ok",
+                'code' : 200,
+            }, encoder=JSONEncoder)
+
+        except Exception as e:
+
+            return JsonResponse({
+                'data': "token invalid!",
+                'code' : 404,
+            }, encoder=JSONEncoder)
+
+    else:
+
+        return JsonResponse({
+            'data': 'request not valid!',
+            'code': 401,
+        }, encoder=JSONEncoder)
+
+@csrf_exempt
+def edit_note_title(request):
+    "user edit a note"
+
+    if request.method == 'POST':
+
+        encoded = request.body
+        json = loads(encoded.decode('utf-8'))
+        
+        this_token = json['token']
+        this_title = json['title']
+        this_text = json['text']
+
+        try:
+            this_user = get_object_or_404(User, token__token=this_token)
+            
+            Note = Notes.objects.get(text=this_text,user=this_user)
+            Note.title = this_title
+            Note.save()
+            
+            return JsonResponse({
+                'data': "ok",
+                'code' : 200,
+            }, encoder=JSONEncoder)
+
+        except Exception as e:
+
+            return JsonResponse({
+                'data': "token invalid!",
+                'code' : 404,
+            }, encoder=JSONEncoder)
+
+    else:
+
+        return JsonResponse({
+            'data': 'request not valid!',
+            'code': 401,
+        }, encoder=JSONEncoder)
+
+@csrf_exempt
 def login(request):
     "login a user"
     
+    #TODO: return json that contains all notes and user informations
+
     if request.method == 'POST':
 
         encoded = request.body
@@ -115,6 +190,35 @@ def submit_note(request):
             now = datetime.now()
             
             Notes.objects.create(user = this_user, title = this_title , text = this_text , date = now)
+
+            return JsonResponse({
+                'data' : 'ok',
+                'code' : 200,
+            }, encoder=JSONEncoder)
+    
+        except Exception as e:
+
+            return JsonResponse({
+                'data': "token invalid!",
+                'code' : 404,
+            }, encoder=JSONEncoder)
+        
+@csrf_exempt
+def delete_note(request):
+    '''this function handle the delete note request'''
+
+    if request.method == 'POST':
+
+        encoded = request.body
+        json = loads(encoded.decode('utf-8'))
+
+        this_token = json['token']
+        this_title = json['title']
+        
+        try:
+        
+            this_user = User.objects.filter(token__token = this_token).get()
+            Notes.objects.filter(user = this_user, title=this_title).delete()
 
             return JsonResponse({
                 'data' : 'ok',
