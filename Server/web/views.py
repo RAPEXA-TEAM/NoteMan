@@ -2,7 +2,7 @@ from django.shortcuts import render
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import get_object_or_404
-from django.contrib.auth.hashers import make_password, check_password
+from django.contrib.auth.hashers import check_password
 from django.views.decorators.http import require_POST
 from json import JSONEncoder,loads
 from web.models import User, Notes, Token
@@ -29,7 +29,6 @@ def forget(request):
 def login(request):
     "login a user"
     
-    # check if POST objects has username and password
     if request.method == 'POST':
 
         encoded = request.body
@@ -67,7 +66,6 @@ def login(request):
 def whoami(request):
     "whoami from request"
 
-    # check if POST objects has token
     if request.method == 'POST':
 
         encoded = request.body
@@ -95,9 +93,37 @@ def whoami(request):
         return JsonResponse({
             'data': 'request not valid!',
             'code': 401,
-        }, encoder=JSONEncoder)  #
+        }, encoder=JSONEncoder)
 
 @csrf_exempt
 def submit_note(request):
+    '''this function handle the submit note request'''
 
-    pass
+    if request.method == 'POST':
+
+        encoded = request.body
+        json = loads(encoded.decode('utf-8'))
+
+        this_token = json['token']
+        this_title = json['title']
+        this_text = json['text']
+        
+        try:
+        
+            this_user = User.objects.filter(token__token = this_token).get()
+            
+            now = datetime.now()
+            
+            Notes.objects.create(user = this_user, title = this_title , text = this_text , date = now)
+
+            return JsonResponse({
+                'data' : 'ok',
+                'code' : 200,
+            }, encoder=JSONEncoder)
+    
+        except Exception as e:
+
+            return JsonResponse({
+                'data': "token invalid!",
+                'code' : 404,
+            }, encoder=JSONEncoder)
