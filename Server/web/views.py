@@ -1,4 +1,3 @@
-from django.shortcuts import render
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import get_object_or_404
@@ -7,18 +6,59 @@ from django.views.decorators.http import require_POST
 from json import JSONEncoder,loads
 from web.models import User, Notes, Token
 from datetime import datetime
+from hashlib import sha256
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+
+import smtplib
+import random
+import string
 
 # Create your views here.
+
 
 @csrf_exempt
 def register(request):
     "register a new user"
-    pass
 
-@csrf_exempt
-def forget(request):
-    "user forget password"
-    pass
+    if request.method == 'POST':
+
+        encoded = request.body
+        json = loads(encoded.decode('utf-8'))
+        
+        username = json['email']
+        password = json['password']
+
+        try:
+
+            User.objects.create_user(username=username,
+                                    email=username,
+                                    password=password)
+            
+            this_user = get_object_or_404(User, username=username)            
+
+            token = sha256(f"{this_user}-NoteMan".encode("utf-8")).hexdigest()
+            
+            Token.objects.create(user=this_user,token=token)
+                
+            return JsonResponse({
+                'data': "user created successfully",
+                'code' : 200,
+            }, encoder=JSONEncoder)
+
+        except Exception as e:
+
+            return JsonResponse({
+                'data': 'error creating user',
+                'code' : 404,
+            }, encoder=JSONEncoder)
+
+    else:
+
+        return JsonResponse({
+            'data': 'request not valid!',
+            'code': 401,
+        }, encoder=JSONEncoder)
 
 @csrf_exempt
 def edit_note_text(request):
@@ -101,15 +141,13 @@ def edit_note_title(request):
 @csrf_exempt
 def login(request):
     "login a user"
-    
-    #TODO: return json that contains all notes and user informations
 
     if request.method == 'POST':
 
         encoded = request.body
         json = loads(encoded.decode('utf-8'))
 
-        username = json['username']
+        username = json['email']
         password = json['password']
 
         this_user = get_object_or_404(User, username=username)
